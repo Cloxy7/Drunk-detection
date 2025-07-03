@@ -7,9 +7,9 @@ There are 9 steps to follow to go through the detection:
 3. Defining cue extraction functions
 4. Preprocessing and landmarks extractions
 5. Create a custom dataset class
-6. Define drunken model
+6. Define the drunken model
 7. Train and evaluate the model
-8. Run the full training program
+8. Metric calcualtion
 9. Visualize model predictions
 
 # 1. Basic setup and importing libraries
@@ -45,10 +45,27 @@ Create a custom Dataset that returns three items per sample:
 - Extracted 5D cue tensor (for fusion)
 - Ground truth label (0 = sober, 1 = drunk)
 
+# 6. Define Drunken Model
+DrunkNet is a lightweight deep learning model designed to detect intoxication by combining:
+- Visual features from IR facial images (via MobileNetV2)
+- Thermal and physiological cues (EAR, EOR, MAR, TAI, CNTD)
+  
+It uses a pretrained MobileNetV2 as a frozen feature extractor to process IR facial images, preserving prior facial knowledge without retraining. A custom fully connected head learns from the image features, while a separate branch processes five key facial cues (EAR, EOR, MAR, TAI, CNTD). These two branches are then concatenated and passed through a final classifier to predict drunk or sober states. 
 
+# 7. Train and evaluate the model
+The model is trained using CrossEntropyLoss and the Adam optimizer, with only the custom classification layers being updated while MobileNetV2 remains frozen. During training, each batch includes both an IR image and its corresponding cue vector, passed through the model to produce predictions. After computing the loss, gradients are backpropagated, and the optimizer updates the trainable layers. Evaluation is done using accuracy, recall, and F1-score to assess both overall performance and sensitivity to impaired cases.
 
+So the flow is like
+forward pass    - get prediction
+loss            - diff between actual and predicted value
+backpropagation - calculate gradients using loss
+optimizer       - update weights to reduce error
 
+# 8. Metric calculation
+After training, the model is evaluated using accuracy, recall, and F1-score, which reflect both the model’s correctness and its ability to detect intoxicated states accurately.
 
+# 9. Visualize model predictions
+In this final step, we visualize the model’s predictions by feeding it IR facial images and their associated cues. The image is first converted to RGB, cue values are extracted, and both are passed through the trained model in evaluation mode. The model's output is then converted into a predicted label (“Drunk” or “Sober”), which is displayed along with the original image using matplotlib. This helps validate the model’s real-world behavior in an interpretable way.
 
 
 
